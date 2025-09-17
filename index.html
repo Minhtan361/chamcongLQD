@@ -1,0 +1,1441 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Chấm Công Thai Thae</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        /* --- Nâng cấp Giao diện V2.0 --- */
+        :root {
+            --primary-color: #2c3e50; /* Xanh Navy Sâu */
+            --secondary-color: #1abc9c; /* Xanh Ngọc - Điểm nhấn chính */
+            --accent-color: #f7dc6f; /* Vàng Cát - Điểm nhấn phụ */
+            --success-color: #2ecc71;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --light-color: #ecf0f1; 
+            --dark-color: #2c3e50;
+        }
+        
+        body {
+            background-color: var(--light-color);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--dark-color);
+        }
+        .navbar-dark .navbar-nav .nav-link:hover {
+            color: var(--accent-color);
+        }
+        .navbar-brand {
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: white !important;
+        }
+        .card {
+            border-radius: 15px; /* Bo góc lớn hơn */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            margin-bottom: 30px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: none;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            transition: background-color 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #34495e;
+            border-color: #34495e;
+        }
+        .btn-success {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+        }
+        .btn-success:hover {
+            background-color: #16a085;
+            border-color: #16a085;
+        }
+        .btn-warning {
+            background-color: var(--warning-color);
+            border-color: var(--warning-color);
+        }
+        .admin-section {
+            background-color: #fcfdfe; /* Nền trắng hơi ngả xanh */
+            border: 1px solid #e0e0e0;
+            padding: 25px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .clock-display {
+            font-size: 4.5rem; /* Lớn hơn */
+            font-weight: 200;
+            text-align: center;
+            color: var(--dark-color);
+            margin: 20px 0;
+            letter-spacing: 2px;
+        }
+        .today-summary {
+            background: linear-gradient(135deg, var(--primary-color) 0%, #34495e 100%); /* Màu nền sẫm */
+            color: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.2);
+        }
+        .today-summary h4 {
+            font-weight: 300;
+            margin-bottom: 8px;
+            opacity: 0.8;
+        }
+        .today-summary h2 {
+            font-weight: 700;
+            font-size: 2.8rem;
+        }
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 20px 15px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e0e0e0;
+        }
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin: 5px 0;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: var(--primary-color) !important;
+            color: white !important;
+            border-color: var(--primary-color) !important;
+            font-weight: bold;
+        }
+        .nav-tabs .nav-link {
+            color: var(--dark-color);
+        }
+        
+        /* Tối ưu nút chấm công */
+        #checkInBtn, #checkOutBtn {
+            font-size: 1.8rem;
+            padding: 20px 40px;
+            font-weight: bold;
+            min-width: 220px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+        #checkInBtn { background-color: var(--secondary-color); border-color: var(--secondary-color); }
+        #checkInBtn:hover { background-color: #16a085; }
+        
+        @media (max-width: 576px) {
+            .clock-display {
+                font-size: 3rem;
+            }
+            #checkInBtn, #checkOutBtn {
+                min-width: 100%;
+                margin-bottom: 10px;
+            }
+        }
+        
+        /* Cần giữ nguyên các style cho print-container, toast, và password-field */
+        /* ... (CSS còn lại) ... */
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary" style="background-color: var(--primary-color) !important;">
+        <div class="container">
+            <a class="navbar-brand" href="#">
+                <i class="fas fa-clock me-2"></i><span data-lang="app-title">QUẢN LÝ CHẤM CÔNG THAI THAE</span>
+            </a>
+            <button class="btn btn-outline-light" id="adminToggle">
+                <i class="fas fa-cog me-1"></i><span data-lang="admin-mode">Chế độ Admin</span>
+            </button>
+        </div>
+    </nav>
+
+    <div class="container mt-5">
+        <div id="loadingIndicator" class="card p-5 text-center">
+            <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 fs-5 text-primary">Đang tải dữ liệu trực tuyến...</p>
+        </div>
+
+        <div id="loginSection" class="d-none">
+            <div class="card p-5 mx-auto" style="max-width: 450px;">
+                <h3 class="text-center mb-4 text-primary">Đăng nhập nhân viên</h3>
+                <p class="text-center text-muted mb-4">Sử dụng tài khoản từ **lqd1** đến **lqd20**</p>
+                <div class="mb-3">
+                    <input type="text" id="usernameInput" class="form-control form-control-lg" placeholder="Tên tài khoản (lqd1, lqd2, ...)">
+                </div>
+                <div class="mb-4 password-field">
+                    <input type="password" id="passwordInput" class="form-control form-control-lg" placeholder="Mật khẩu">
+                    <i class="fas fa-eye password-toggle" id="passwordToggle"></i>
+                </div>
+                <button id="loginBtn" class="btn btn-primary btn-lg w-100 fw-bold">Đăng nhập</button>
+            </div>
+        </div>
+
+        <div id="employeeDashboard" class="d-none">
+            <div class="card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h4 id="employeeNameDisplay" class="fw-bold text-primary"></h4>
+                    <button id="logoutBtn" class="btn btn-danger btn-sm"><i class="fas fa-sign-out-alt"></i> Đăng xuất</button>
+                </div>
+                <div class="today-summary">
+                    <div class="row align-items-center">
+                        <div class="col-md-7">
+                            <h4 id="todayDate"></h4>
+                            <div class="clock-display text-white" id="currentTime"></div>
+                        </div>
+                        <div class="col-md-5 text-md-end text-center mt-3 mt-md-0">
+                            <button id="showSalaryBtn" class="btn btn-lg btn-light text-primary fw-bold shadow-sm">
+                                <i class="fas fa-money-bill-wave me-1"></i> XEM LƯƠNG
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-center gap-3 mb-5 flex-wrap">
+                    <button id="checkInBtn" class="btn btn-lg fw-bold"><i class="fas fa-sign-in-alt me-2"></i> GIỜ VÀO</button>
+                    <button id="checkOutBtn" class="btn btn-warning btn-lg fw-bold"><i class="fas fa-sign-out-alt me-2"></i> GIỜ RA</button>
+                </div>
+                
+                <h5 class="mt-4 text-primary"><i class="fas fa-history me-1"></i> Lịch sử chấm công của bạn</h5>
+                <div class="table-responsive">
+                    <table class="table table-striped" id="attendanceTable">
+                        <thead>
+                            <tr>
+                                <th>Ngày</th>
+                                <th>Giờ vào</th>
+                                <th>Giờ ra</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <div id="adminDashboard" class="d-none">
+            <div class="card p-4">
+                <ul class="nav nav-tabs" id="adminTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="management-tab" data-bs-toggle="tab" data-bs-target="#management" type="button" role="tab" aria-controls="management" aria-selected="true"><i class="fas fa-users-cog me-1"></i> Quản lý</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="report-tab" data-bs-toggle="tab" data-bs-target="#report" type="button" role="tab" aria-controls="report" aria-selected="false"><i class="fas fa-file-invoice-dollar me-1"></i> Báo cáo</button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link" id="edit-attendance-tab" data-bs-toggle="tab" data-bs-target="#edit-attendance" type="button" role="tab" aria-controls="edit-attendance" aria-selected="false"><i class="fas fa-wrench me-1"></i> Sửa công</button>
+                    </li>
+                </ul>
+                <div class="tab-content mt-4">
+                    <div class="tab-pane fade show active" id="management" role="tabpanel" aria-labelledby="management-tab">
+                        <h3 class="mb-4 text-primary fw-bold">Quản lý Tài khoản & Nhân sự</h3>
+                        
+                        <div class="dashboard-stats">
+                            <div class="stat-card">
+                                <div class="stat-value text-primary" id="totalEmployees">0</div>
+                                <div class="stat-label">Tổng nhân viên</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value text-success" id="presentToday">0</div>
+                                <div class="stat-label">Có mặt hôm nay</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value text-danger" id="absentToday">0</div>
+                                <div class="stat-label">Vắng mặt hôm nay</div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-value text-muted" id="unusedAccounts">0</div>
+                                <div class="stat-label">Tài khoản trống</div>
+                            </div>
+                        </div>
+
+                        <div class="admin-section">
+                            <h5 class="mb-4 text-secondary"><i class="fas fa-user-plus me-1"></i> Thêm Nhân viên mới</h5>
+                            <div class="mb-3">
+                                <div class="input-group">
+                                    <input type="text" id="newEmployeeName" class="form-control" placeholder="Tên nhân viên">
+                                    <select id="newEmployeePosition" class="form-select">
+                                        <option value="">Chọn chức vụ</option>
+                                        <option value="Bếp">Bếp</option>
+                                        <option value="Phục vụ">Phục vụ</option>
+                                    </select>
+                                    <input type="number" id="newEmployeeSalary" class="form-control" placeholder="Lương cơ bản (VND)">
+                                    <button id="addEmployeeBtn" class="btn btn-success"><i class="fas fa-check"></i> Thêm</button>
+                                </div>
+                            </div>
+
+                            <h5 class="mt-4 text-primary">Danh sách Tài khoản</h5>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm table-hover" id="adminEmployeeTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Tài khoản</th>
+                                            <th>Tên nhân viên</th>
+                                            <th>Chức vụ</th>
+                                            <th>Lương cơ bản</th>
+                                            <th>Hành động</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tab-pane fade" id="report" role="tabpanel" aria-labelledby="report-tab">
+                        <h3 class="mb-4 text-primary fw-bold">Báo cáo Lương & Xuất File</h3>
+                        <div class="admin-section">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="reportStartDate" class="form-label">Từ ngày</label>
+                                    <input type="date" id="reportStartDate" class="form-control">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="reportEndDate" class="form-label">Đến ngày</label>
+                                    <input type="date" id="reportEndDate" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row g-3 mb-4">
+                                <div class="col-md-3">
+                                    <label for="bonus" class="form-label">Thưởng (VND)</label>
+                                    <input type="number" id="bonus" class="form-control" value="0" min="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="deduction" class="form-label">Phạt (VND)</label>
+                                    <input type="number" id="deduction" class="form-control" value="0" min="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="absentPenalty" class="form-label">Phạt sửa công (VND/lần)</label>
+                                    <input type="number" id="absentPenalty" class="form-control" value="20000" min="0">
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="holidayDates" class="form-label">Ngày Lễ (VD: 2025-09-02)</label>
+                                    <input type="text" id="holidayDates" class="form-control" placeholder="YYYY-MM-DD, ...">
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <button id="updatePayrollBtn" class="btn btn-primary w-50 me-2 fw-bold"><i class="fas fa-calculator me-1"></i> CẬP NHẬT LƯƠNG</button>
+                                <button id="exportExcelBtn" class="btn btn-success w-50 ms-2 d-none fw-bold"><i class="fas fa-file-excel me-1"></i> XUẤT EXCEL</button>
+                            </div>
+                        </div>
+                        
+                        <h5 class="mt-5 text-primary">Bảng Lương Tổng hợp</h5>
+                        <div class="table-responsive mt-3">
+                            <table class="table table-bordered table-sm table-hover" id="payrollReportTable">
+                                <thead class="table-dark">
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Tên NV</th>
+                                        <th>Chức vụ</th>
+                                        <th>Ngày công</th>
+                                        <th>Giờ làm</th>
+                                        <th>Lần sửa công</th>
+                                        <th>Lương cơ bản</th>
+                                        <th>Lương ngày lễ</th>
+                                        <th>Thưởng</th>
+                                        <th>Phạt</th>
+                                        <th>Phạt sửa công</th>
+                                        <th>Tổng thực nhận</th>
+                                        <th>Hành động</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div class="tab-pane fade" id="edit-attendance" role="tabpanel" aria-labelledby="edit-attendance-tab">
+                        <h3 class="mb-4 text-primary fw-bold">Sửa Dữ liệu Chấm công</h3>
+                        <div class="admin-section">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <input type="text" class="form-control" id="searchEmployee" placeholder="Tìm kiếm theo tên nhân viên...">
+                                </div>
+                            </div>
+                            <div class="table-responsive">
+                                <table class="table table-bordered table-sm table-hover" id="editAttendanceTable">
+                                    <thead class="table-light">
+                                        <tr>
+                                            <th>Tên NV</th>
+                                            <th>Ngày</th>
+                                            <th>Giờ vào</th>
+                                            <th>Giờ ra</th>
+                                            <th>Trạng thái</th>
+                                            <th>Hành động</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="adminLoginModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Đăng nhập Quản trị</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="adminPassword" class="form-label">Mật khẩu Quản trị</label>
+                        <input type="password" class="form-control" id="adminPassword">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="adminLoginBtn">Đăng nhập</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editModalLabel">Sửa thông tin nhân viên</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editAccountId">
+                    <div class="mb-3">
+                        <label for="editEmployeeName" class="form-label">Tên nhân viên</label>
+                        <input type="text" class="form-control" id="editEmployeeName">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmployeePosition" class="form-label">Chức vụ</label>
+                        <select id="editEmployeePosition" class="form-select">
+                            <option value="Bếp">Bếp</option>
+                            <option value="Phục vụ">Phục vụ</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editEmployeeSalary" class="form-label">Lương cơ bản (VND)</label>
+                        <input type="number" class="form-control" id="editEmployeeSalary">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="saveEditBtn">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editAttendanceModal" tabindex="-1" aria-labelledby="editAttendanceModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="editAttendanceModalLabel">Sửa giờ chấm công</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="editAttendanceId">
+                    <div class="mb-3">
+                        <label for="editAttendanceDate" class="form-label">Ngày</label>
+                        <input type="date" class="form-control" id="editAttendanceDate" disabled>
+                    </div>
+                    <div class="mb-3">
+                        <label for="editCheckInTime" class="form-label">Giờ vào</label>
+                        <input type="time" class="form-control" id="editCheckInTime">
+                    </div>
+                    <div class="mb-3">
+                        <label for="editCheckOutTime" class="form-label">Giờ ra</label>
+                        <input type="time" class="form-control" id="editCheckOutTime">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" id="saveAttendanceEditBtn">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header">
+                <strong class="me-auto" id="toastTitle">Thông báo</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+            <div class="toast-body" id="toastMessage"></div>
+        </div>
+    </div>
+
+    <div class="print-container d-none" id="printReport">
+        </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
+    <script>
+        // Cấu hình Firebase của bạn
+        const firebaseConfig = {
+          apiKey: "AIzaSyBI6gADn7OPIJbK3x4tu69Zh5eRLoXO_zs",
+          authDomain: "minhtan-d6ecd.firebaseapp.com",
+          projectId: "minhtan-d6ecd",
+          storageBucket: "minhtan-d6ecd.firebasestorage.app",
+          messagingSenderId: "490270665555",
+          appId: "1:490270665555:web:7df829b497cf0985448fa6",
+          measurementId: "G-6VXZT1ZER6"
+        };
+
+        // Khởi tạo Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = app.firestore(); // Khởi tạo Firestore
+
+        // Biến toàn cục để lưu trữ dữ liệu từ Firebase
+        let globalAccounts = [];
+        let globalAttendance = [];
+        let globalPayrollData = null; // Lưu trữ dữ liệu bảng lương đã tính gần nhất
+
+        // --- Core Functions & Global Variables ---
+        const ADMIN_PASSWORD = "thaithae2025@";
+        const SESSION_DURATION_MS = 64 * 60 * 60 * 1000;
+        let currentUser = null;
+        let isAdmin = false;
+        
+        // DOM Elements (Giữ nguyên)
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const loginSection = document.getElementById('loginSection');
+        const employeeDashboard = document.getElementById('employeeDashboard');
+        const adminDashboard = document.getElementById('adminDashboard');
+        const usernameInput = document.getElementById('usernameInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const passwordToggle = document.getElementById('passwordToggle');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const employeeNameDisplay = document.getElementById('employeeNameDisplay');
+        const showSalaryBtn = document.getElementById('showSalaryBtn');
+        const checkInBtn = document.getElementById('checkInBtn');
+        const checkOutBtn = document.getElementById('checkOutBtn');
+        const attendanceTable = document.getElementById('attendanceTable').querySelector('tbody');
+        const adminToggle = document.getElementById('adminToggle');
+        const adminLoginModal = new bootstrap.Modal(document.getElementById('adminLoginModal'));
+        const adminPasswordInput = document.getElementById('adminPassword');
+        const adminLoginBtn = document.getElementById('adminLoginBtn');
+        const newEmployeeNameInput = document.getElementById('newEmployeeName');
+        const newEmployeePositionInput = document.getElementById('newEmployeePosition');
+        const newEmployeeSalaryInput = document.getElementById('newEmployeeSalary');
+        const addEmployeeBtn = document.getElementById('addEmployeeBtn');
+        const adminEmployeeTable = document.getElementById('adminEmployeeTable').querySelector('tbody');
+        const editModal = new bootstrap.Modal(document.getElementById('editModal'));
+        const editAccountIdInput = document.getElementById('editAccountId');
+        const editEmployeeNameInput = document.getElementById('editEmployeeName');
+        const editEmployeePositionInput = document.getElementById('editEmployeePosition');
+        const editEmployeeSalaryInput = document.getElementById('editEmployeeSalary');
+        const saveEditBtn = document.getElementById('saveEditBtn');
+        const totalEmployeesStat = document.getElementById('totalEmployees');
+        const presentTodayStat = document.getElementById('presentToday');
+        const absentTodayStat = document.getElementById('absentToday');
+        const unusedAccountsStat = document.getElementById('unusedAccounts');
+        const updatePayrollBtn = document.getElementById('updatePayrollBtn');
+        const reportStartDateInput = document.getElementById('reportStartDate');
+        const reportEndDateInput = document.getElementById('reportEndDate');
+        const bonusInput = document.getElementById('bonus');
+        const deductionInput = document.getElementById('deduction');
+        const absentPenaltyInput = document.getElementById('absentPenalty');
+        const holidayDatesInput = document.getElementById('holidayDates');
+        const payrollReportTableBody = document.getElementById('payrollReportTable').querySelector('tbody');
+        const exportExcelBtn = document.getElementById('exportExcelBtn');
+        const searchEmployeeInput = document.getElementById('searchEmployee');
+        const editAttendanceTableBody = document.getElementById('editAttendanceTable').querySelector('tbody');
+        const editAttendanceModal = new bootstrap.Modal(document.getElementById('editAttendanceModal'));
+        const editAttendanceIdInput = document.getElementById('editAttendanceId');
+        const editAttendanceDateInput = document.getElementById('editAttendanceDate');
+        const editCheckInTimeInput = document.getElementById('editCheckInTime');
+        const editCheckOutTimeInput = document.getElementById('editCheckOutTime');
+        const saveAttendanceEditBtn = document.getElementById('saveAttendanceEditBtn');
+
+        // Print elements (Giữ nguyên)
+        const printReport = document.getElementById('printReport');
+        const printMonthYear = document.getElementById('printMonthYear');
+        const printName = document.getElementById('printName');
+        const printPosition = document.getElementById('printPosition');
+        const printWorkDays = document.getElementById('printWorkDays');
+        const printWorkHours = document.getElementById('printWorkHours');
+        const printBaseSalary = document.getElementById('printBaseSalary');
+        const printHolidaySalary = document.getElementById('printHolidaySalary');
+        const printHolidayNote = document.getElementById('printHolidayNote');
+        const printBonus = document.getElementById('printBonus');
+        const printDeduction = document.getElementById('printDeduction');
+        const printAbsentPenaltyCount = document.getElementById('printAbsentPenaltyCount');
+        const printAbsentPenaltyAmount = document.getElementById('printAbsentPenaltyAmount');
+        const printTotalReceived = document.getElementById('printTotalReceived');
+
+        // (GIỮ NGUYÊN các hàm formatTime, formatToTimeString, updateClock, formatCurrency, showNotification)
+        function showNotification(title, message) {
+            const toast = new bootstrap.Toast(document.getElementById('notificationToast'));
+            document.getElementById('toastTitle').textContent = title;
+            document.getElementById('toastMessage').textContent = message;
+            toast.show();
+        }
+
+        function formatTime(date) {
+            const h = new Date(date).getHours().toString().padStart(2, '0');
+            const m = new Date(date).getMinutes().toString().padStart(2, '0');
+            const s = new Date(date).getSeconds().toString().padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        function formatToTimeString(timestamp) {
+            if (!timestamp) return '';
+            const date = new Date(timestamp);
+            const h = date.getHours().toString().padStart(2, '0');
+            const m = date.getMinutes().toString().padStart(2, '0');
+            return `${h}:${m}`;
+        }
+        
+        function updateClock() {
+            const now = new Date();
+            const days = ['Chủ Nhật', 'Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy'];
+            const dayName = days[now.getDay()];
+            document.getElementById('todayDate').textContent = `${dayName}, ${now.toLocaleDateString('vi-VN')}`;
+            document.getElementById('currentTime').textContent = formatTime(now);
+        }
+
+        function formatCurrency(number) {
+            if (typeof number !== 'number' && typeof number !== 'string') return number;
+            return parseFloat(number).toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
+        }
+
+
+        // --- Firebase Data Management (Cập nhật để dùng 'lqd' thay 'tsn') ---
+
+        /**
+         * Tải tất cả dữ liệu cần thiết từ Firestore.
+         */
+        async function loadInitialDataFromFirebase() {
+            try {
+                const accountsSnapshot = await db.collection('accounts').get();
+                globalAccounts = accountsSnapshot.docs.map(doc => doc.data());
+
+                // Nếu chưa có tài khoản, tạo dữ liệu ban đầu
+                if (globalAccounts.length === 0) {
+                    await createInitialAccountsInFirebase(); // Gọi hàm tạo tài khoản mới (lqd1..lqd20)
+                    const recheckSnapshot = await db.collection('accounts').get();
+                    globalAccounts = recheckSnapshot.docs.map(doc => doc.data());
+                }
+
+                const attendanceSnapshot = await db.collection('attendance').get();
+                globalAttendance = attendanceSnapshot.docs.map(doc => doc.data());
+                
+                const payrollDoc = await db.collection('settings').doc('payroll').get();
+                if(payrollDoc.exists) {
+                    globalPayrollData = payrollDoc.data();
+                }
+
+                return true; 
+            } catch (error) {
+                console.error("Lỗi khi tải dữ liệu từ Firebase: ", error);
+                showNotification('Lỗi nghiêm trọng', 'Không thể kết nối hoặc tải dữ liệu từ Firebase. Vui lòng kiểm tra console.');
+                return false;
+            }
+        }
+        
+        /**
+         * Tạo tài khoản mặc định LQD1-LQD20 và lưu vào Firebase.
+         */
+        async function createInitialAccountsInFirebase() {
+            const accounts = [];
+            for (let i = 1; i <= 20; i++) {
+                accounts.push({
+                    username: `lqd${i}`, // Đã thay đổi từ tsn thành lqd
+                    password: `${i}`,
+                    name: null,
+                    position: null,
+                    salary: null,
+                    isUsed: false
+                });
+            }
+            
+            const batch = db.batch();
+            accounts.forEach(acc => {
+                // Dùng username làm Document ID
+                batch.set(db.collection('accounts').doc(acc.username), acc);
+            });
+            
+            try {
+                await batch.commit();
+                showNotification('Thông báo', 'Đã tạo 20 tài khoản mặc định LQD trên Firebase.');
+                return accounts;
+            } catch (error) {
+                console.error("Lỗi khi tạo tài khoản ban đầu: ", error);
+                return [];
+            }
+        }
+        
+        /**
+         * Tương đương với getAccounts()
+         */
+        function getAccounts() {
+            return globalAccounts;
+        }
+
+        /**
+         * Tương đương với getAttendance()
+         */
+        function getAttendance() {
+            return globalAttendance;
+        }
+
+        /**
+         * Lưu Accounts vào Firebase
+         */
+        async function saveAccounts(accounts) {
+            globalAccounts = accounts;
+            
+            for (const acc of accounts) {
+                try {
+                    await db.collection('accounts').doc(acc.username).set(acc, { merge: true });
+                } catch(error) {
+                    console.error(`Lỗi khi cập nhật tài khoản ${acc.username}: `, error);
+                }
+            }
+        }
+        
+        /**
+         * Lưu một bản ghi Attendance mới hoặc cập nhật bản ghi đã có
+         */
+        async function saveAttendanceRecord(record) {
+            if(!record.id) {
+                console.error("Attendance record thiếu ID!");
+                return;
+            }
+            
+            // Cập nhật biến globalAttendance
+            const index = globalAttendance.findIndex(rec => rec.id === record.id);
+            if (index !== -1) {
+                globalAttendance[index] = record;
+            } else {
+                globalAttendance.push(record);
+            }
+            
+            // Lưu lên Firebase
+            try {
+                await db.collection('attendance').doc(String(record.id)).set(record);
+            } catch(error) {
+                console.error("Lỗi khi lưu/cập nhật Attendance: ", error);
+                showNotification('Lỗi', 'Lỗi khi lưu dữ liệu chấm công lên Firebase');
+            }
+        }
+        
+        /**
+         * Lưu toàn bộ attendance. Chỉ dùng khi sửa công hàng loạt (Đã lược bỏ để tối ưu).
+         */
+        async function saveAttendance(attendance) {
+             globalAttendance = attendance;
+        }
+        
+        /**
+         * Lưu dữ liệu Payroll đã tính toán
+         */
+        async function savePayrollData(data) {
+            globalPayrollData = data;
+             try {
+                await db.collection('settings').doc('payroll').set(data);
+                showNotification('Thành công', 'Đã lưu bảng lương lên máy chủ.');
+             } catch(error) {
+                console.error("Lỗi khi lưu Payroll Data: ", error);
+                showNotification('Lỗi', 'Lỗi khi lưu bảng lương lên Firebase');
+             }
+        }
+        
+        // --- Session Management & UI Functions (Giữ nguyên) ---
+
+        function checkSession() {
+            const sessionData = JSON.parse(localStorage.getItem('userSession'));
+            if (sessionData && new Date().getTime() < sessionData.expiry) {
+                const account = globalAccounts.find(acc => acc.username === sessionData.username);
+                if (account) {
+                    currentUser = account;
+                    showEmployeeDashboard(account.name, account.position);
+                } else {
+                    clearSession();
+                    showLoginScreen();
+                }
+            } else {
+                clearSession();
+                showLoginScreen();
+            }
+        }
+        
+        function clearSession() {
+            localStorage.removeItem('userSession');
+            currentUser = null;
+        }
+
+        function showLoginScreen() {
+            loadingIndicator.classList.add('d-none');
+            loginSection.classList.remove('d-none');
+            employeeDashboard.classList.add('d-none');
+            adminDashboard.classList.add('d-none');
+            adminToggle.classList.remove('d-none');
+            adminToggle.textContent = 'Chế độ Admin';
+        }
+
+        function showEmployeeDashboard(name, position) {
+            loadingIndicator.classList.add('d-none');
+            loginSection.classList.add('d-none');
+            employeeDashboard.classList.remove('d-none');
+            adminDashboard.classList.add('d-none');
+            adminToggle.classList.add('d-none');
+            employeeNameDisplay.textContent = `Chào mừng, ${name} (${position})`;
+            loadAttendance(name);
+        }
+
+        function showAdminDashboard() {
+            loadingIndicator.classList.add('d-none');
+            loginSection.classList.add('d-none');
+            employeeDashboard.classList.add('d-none');
+            adminDashboard.classList.remove('d-none');
+            adminToggle.textContent = 'Đăng xuất Admin';
+        }
+
+        // --- Admin Functions (Giữ nguyên logic) ---
+
+        async function loadAdminData() {
+            await loadInitialDataFromFirebase(); 
+            
+            const accounts = getAccounts();
+            adminEmployeeTable.innerHTML = '';
+            
+            // Sắp xếp theo số (lqd1, lqd2, ...)
+            const sortedAccounts = accounts.sort((a, b) => {
+                const numA = parseInt(a.username.substring(3));
+                const numB = parseInt(b.username.substring(3));
+                return numA - numB;
+            });
+            
+            sortedAccounts.forEach(emp => {
+                const row = adminEmployeeTable.insertRow();
+                const isUsed = emp.isUsed;
+                row.className = isUsed ? '' : 'table-secondary'; // Đánh dấu tài khoản trống
+                row.innerHTML = `
+                    <td>${emp.username}</td>
+                    <td>${isUsed ? emp.name : '<span class="text-muted">Trống</span>'}</td>
+                    <td>${isUsed ? emp.position : '<span class="text-muted">Trống</span>'}</td>
+                    <td>${isUsed ? formatCurrency(emp.salary) : '<span class="text-muted">N/A</span>'}</td>
+                    <td class="action-buttons">
+                        ${isUsed ? `<button class="btn btn-warning btn-sm edit-btn" data-id="${emp.username}"><i class="fas fa-edit"></i> Sửa</button>
+                                    <button class="btn btn-danger btn-sm delete-btn" data-id="${emp.username}"><i class="fas fa-trash-alt"></i> Xóa</button>` : '-'}
+                    </td>
+                `;
+            });
+            
+            totalEmployeesStat.textContent = accounts.length;
+            unusedAccountsStat.textContent = accounts.filter(acc => !acc.isUsed).length;
+            updateAdminTodayStats();
+            loadAttendanceForEdit(); 
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => btn.addEventListener('click', deleteEmployee));
+            document.querySelectorAll('.edit-btn').forEach(btn => btn.addEventListener('click', editEmployee));
+            
+            if(globalPayrollData) {
+                renderPayrollReport(globalPayrollData.report);
+            }
+        }
+        
+        function updateAdminTodayStats() {
+            const attendance = getAttendance();
+            const today = new Date().toISOString().split('T')[0];
+            const presentToday = new Set(attendance.filter(record => record.date === today && record.checkIn).map(record => record.name)).size;
+            presentTodayStat.textContent = presentToday;
+            const usedAccounts = getAccounts().filter(acc => acc.isUsed).length;
+            absentTodayStat.textContent = usedAccounts - presentToday;
+        }
+
+        async function addEmployee() {
+            const name = newEmployeeNameInput.value.trim();
+            const position = newEmployeePositionInput.value.trim();
+            const salary = parseFloat(newEmployeeSalaryInput.value) || 0;
+            
+            if (!name || !position || !salary) {
+                showNotification('Lỗi', 'Vui lòng nhập tên, chức vụ và lương cơ bản');
+                return;
+            }
+            
+            const accounts = getAccounts();
+            // Tìm tài khoản trống đầu tiên, sắp xếp theo số (lqd1, lqd2, ...)
+            const unusedAccount = accounts
+                .filter(acc => !acc.isUsed)
+                .sort((a, b) => parseInt(a.username.substring(3)) - parseInt(b.username.substring(3)))[0];
+            
+            if (!unusedAccount) {
+                showNotification('Lỗi', 'Không còn tài khoản trống. Vui lòng tạo thêm trong Firebase Console hoặc xóa tài khoản cũ.');
+                return;
+            }
+            
+            unusedAccount.name = name;
+            unusedAccount.position = position;
+            unusedAccount.salary = salary;
+            unusedAccount.isUsed = true;
+            
+            await saveAccounts(accounts);
+            showNotification('Thành công', `Đã thêm nhân viên ${name} vào tài khoản ${unusedAccount.username}`);
+            
+            newEmployeeNameInput.value = '';
+            newEmployeePositionInput.value = '';
+            newEmployeeSalaryInput.value = '';
+            loadAdminData();
+        }
+
+        // (GIỮ NGUYÊN các hàm editEmployee, saveEdit, deleteEmployee, loadAttendance, recordCheckIn, recordCheckOut, showMySalary)
+        function editEmployee(e) {
+            const id = e.currentTarget.dataset.id;
+            const accounts = getAccounts();
+            const employee = accounts.find(acc => acc.username === id);
+            
+            editAccountIdInput.value = id;
+            editEmployeeNameInput.value = employee.name;
+            editEmployeePositionInput.value = employee.position;
+            editEmployeeSalaryInput.value = employee.salary;
+            editModal.show();
+        }
+
+        async function saveEdit() {
+            const id = editAccountIdInput.value;
+            const name = editEmployeeNameInput.value.trim();
+            const position = editEmployeePositionInput.value.trim();
+            const salary = parseFloat(editEmployeeSalaryInput.value) || 0;
+
+            if (!name || !position || !salary) {
+                showNotification('Lỗi', 'Tên, chức vụ và lương cơ bản không được để trống');
+                return;
+            }
+
+            const accounts = getAccounts();
+            const employee = accounts.find(acc => acc.username === id);
+            employee.name = name;
+            employee.position = position;
+            employee.salary = salary;
+            
+            await saveAccounts(accounts);
+            showNotification('Thành công', 'Đã cập nhật thông tin nhân viên');
+            editModal.hide();
+            loadAdminData();
+        }
+
+        async function deleteEmployee(e) {
+            const id = e.currentTarget.dataset.id;
+            if (confirm(`Bạn có chắc chắn muốn xóa tài khoản ${id}? Thao tác này KHÔNG xóa lịch sử chấm công!`)) {
+                const accounts = getAccounts();
+                const account = accounts.find(acc => acc.username === id);
+                account.name = null;
+                account.position = null;
+                account.salary = null;
+                account.isUsed = false;
+                
+                await saveAccounts(accounts);
+                showNotification('Thành công', `Đã xóa thông tin nhân viên khỏi tài khoản ${id}`);
+                loadAdminData();
+            }
+        }
+
+        function loadAttendance(name) {
+            const attendance = getAttendance();
+            const employeeAttendance = attendance.filter(record => record.name === name);
+            attendanceTable.innerHTML = '';
+            employeeAttendance.sort((a,b) => new Date(b.date) - new Date(a.date)).forEach(record => {
+                const status = record.isEdited ? 'Đã sửa công' : (record.checkOut ? 'Hoàn thành' : 'Đang làm');
+                const badgeClass = record.isEdited ? 'bg-danger' : (record.checkOut ? 'bg-success' : 'bg-warning');
+                const row = attendanceTable.insertRow();
+                row.innerHTML = `
+                    <td>${record.date}</td>
+                    <td>${record.checkIn ? formatTime(record.checkIn) : 'N/A'}</td>
+                    <td>${record.checkOut ? formatTime(record.checkOut) : 'N/A'}</td>
+                    <td><span class="badge ${badgeClass}">${status}</span></td>
+                `;
+            });
+        }
+        
+        async function recordCheckIn() {
+            const name = currentUser.name;
+            const now = new Date();
+            const date = now.toISOString().split('T')[0];
+            
+            const attendance = getAttendance();
+            const existingRecord = attendance.find(record => record.name === name && record.date === date);
+            if (existingRecord) {
+                showNotification('Lỗi', 'Bạn đã chấm công giờ vào hôm nay');
+                return;
+            }
+
+            const newRecord = {
+                name: name,
+                date: date,
+                checkIn: now.getTime(),
+                checkOut: null,
+                isEdited: false,
+                id: Date.now() 
+            };
+            
+            await saveAttendanceRecord(newRecord);
+            showNotification('Thành công', `Đã ghi nhận giờ vào lúc ${formatTime(now)}`);
+            loadAttendance(name);
+        }
+
+        async function recordCheckOut() {
+            const name = currentUser.name;
+            const now = new Date();
+            const date = now.toISOString().split('T')[0];
+            
+            const attendance = getAttendance();
+            const record = attendance.find(record => record.name === name && record.date === date);
+
+            if (!record || record.checkOut) {
+                 showNotification('Lỗi', 'Bạn chưa chấm công giờ vào hoặc đã chấm công giờ ra hôm nay');
+                 return;
+            }
+            
+            record.checkOut = now.getTime();
+            await saveAttendanceRecord(record);
+            showNotification('Thành công', `Đã ghi nhận giờ ra lúc ${formatTime(now)}`);
+            loadAttendance(name);
+        }
+
+        function showMySalary() {
+            if (globalPayrollData) {
+                const mySalaryData = globalPayrollData.report.find(item => item.name === currentUser.name);
+                if (mySalaryData) {
+                    printEmployeeReport(mySalaryData, globalPayrollData);
+                } else {
+                     showNotification('Thông báo', 'Dữ liệu lương của bạn chưa được cập nhật.');
+                }
+            } else {
+                showNotification('Thông báo', 'Bảng lương chưa được quản trị viên cập nhật. Vui lòng liên hệ Admin.');
+            }
+        }
+
+        // (GIỮ NGUYÊN các hàm Reporting & Payroll Functions)
+
+        function renderPayrollReport(reportData) {
+            payrollReportTableBody.innerHTML = '';
+            reportData.forEach((item, index) => {
+                const row = payrollReportTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${index + 1}</td>
+                    <td>${item.name}</td>
+                    <td>${item.position}</td>
+                    <td>${item.totalDays} ngày</td>
+                    <td>${item.totalHours} giờ</td>
+                    <td>${item.editedRecords}</td>
+                    <td>${formatCurrency(parseFloat(item.baseSalary))}</td>
+                    <td>${formatCurrency(parseFloat(item.holidaySalary))}</td>
+                    <td>${formatCurrency(parseFloat(item.bonus))}</td>
+                    <td>${formatCurrency(parseFloat(item.deduction))}</td>
+                    <td>${formatCurrency(parseFloat(item.absentPenalty))}</td>
+                    <td class="fw-bold">${formatCurrency(parseFloat(item.totalReceived))}</td>
+                    <td><button class="btn btn-sm btn-info print-btn" data-name="${item.name}"><i class="fas fa-print"></i> In</button></td>
+                `;
+            });
+            exportExcelBtn.classList.remove('d-none');
+        }
+
+        async function calculatePayroll() {
+            const startDateStr = reportStartDateInput.value;
+            const endDateStr = reportEndDateInput.value;
+
+            if (!startDateStr || !endDateStr) {
+                showNotification('Lỗi', 'Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc');
+                return;
+            }
+
+            const startDate = new Date(startDateStr);
+            const endDate = new Date(endDateStr);
+            endDate.setHours(23, 59, 59, 999);
+
+            if (startDate > endDate) {
+                showNotification('Lỗi', 'Ngày bắt đầu phải trước hoặc bằng ngày kết thúc');
+                return;
+            }
+
+            const bonus = parseFloat(bonusInput.value) || 0;
+            const deduction = parseFloat(deductionInput.value) || 0;
+            const absentPenalty = parseFloat(absentPenaltyInput.value) || 0;
+            const holidayDates = holidayDatesInput.value.split(',').map(date => date.trim()).filter(d => d);
+
+            const attendance = getAttendance();
+            const accounts = getAccounts().filter(acc => acc.isUsed);
+            const reportData = [];
+
+            accounts.forEach(emp => {
+                const employeeRecords = attendance.filter(record => {
+                    const recordDate = new Date(record.date);
+                    return record.name === emp.name && recordDate >= startDate && recordDate <= endDate;
+                });
+                
+                let totalHours = 0;
+                let totalWorkingDays = 0;
+                let editedRecordsCount = 0;
+                let holidaySalary = 0;
+                let holidayNotes = [];
+
+                employeeRecords.forEach(record => {
+                    if (record.isEdited) {
+                        editedRecordsCount++;
+                    }
+                    if (record.checkIn && record.checkOut) {
+                        const checkInTime = new Date(record.checkIn).getTime();
+                        const checkOutTime = new Date(record.checkOut).getTime();
+                        let dailyHours = (checkOutTime - checkInTime) / (1000 * 60 * 60);
+                        
+                        // Xử lý Ngày Lễ
+                        if (holidayDates.includes(record.date)) {
+                            holidaySalary += dailyHours * emp.salary;
+                            holidayNotes.push(`${record.date} (${dailyHours.toFixed(2)} giờ)`);
+                        }
+                        
+                        totalHours += dailyHours;
+                        totalWorkingDays++;
+                    }
+                });
+
+                let baseSalary = 0;
+                // Giả định: Phục vụ tính theo Giờ, Bếp tính theo Ngày
+                if (emp.position === 'Phục vụ') {
+                    baseSalary = totalHours * emp.salary;
+                } else if (emp.position === 'Bếp') {
+                    baseSalary = totalWorkingDays * emp.salary;
+                }
+                
+                const totalAbsentPenalty = editedRecordsCount * absentPenalty;
+                const totalDeductions = deduction + totalAbsentPenalty;
+                const totalReceived = baseSalary + holidaySalary + bonus - totalDeductions;
+
+                reportData.push({
+                    name: emp.name,
+                    position: emp.position,
+                    totalDays: totalWorkingDays,
+                    totalHours: totalHours.toFixed(2),
+                    editedRecords: editedRecordsCount,
+                    baseSalary: baseSalary.toFixed(0),
+                    holidaySalary: holidaySalary.toFixed(0),
+                    bonus: bonus.toFixed(0),
+                    deduction: deduction.toFixed(0),
+                    absentPenalty: totalAbsentPenalty.toFixed(0),
+                    totalReceived: totalReceived.toFixed(0),
+                    notes: holidayNotes.length > 0 ? `Ngày lễ: ${holidayNotes.length} ngày` : '',
+                    detailedRecords: employeeRecords
+                });
+            });
+
+            const payrollData = {
+                startDate: startDateStr,
+                endDate: endDateStr,
+                bonus: bonus,
+                deduction: deduction,
+                absentPenaltyValue: absentPenalty,
+                holidayDates: holidayDates,
+                report: reportData
+            };
+            
+            await savePayrollData(payrollData);
+
+            renderPayrollReport(reportData);
+            
+            showNotification('Thành công', `Đã cập nhật bảng lương từ ${startDateStr} đến ${endDateStr}`);
+        }
+
+        function exportDetailedToExcel() {
+            if (!globalPayrollData) {
+                showNotification('Lỗi', 'Chưa có dữ liệu lương để xuất.');
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+            
+            // Sheet 1: Bảng tổng hợp
+            const summaryData = globalPayrollData.report.map(item => ({
+                "Tên NV": item.name,
+                "Chức vụ": item.position,
+                "Ngày công": item.totalDays,
+                "Giờ làm": item.totalHours,
+                "Lần sửa công": item.editedRecords,
+                "Tổng lương cơ bản": parseFloat(item.baseSalary),
+                "Lương ngày lễ": parseFloat(item.holidaySalary),
+                "Thưởng": parseFloat(item.bonus),
+                "Phạt": parseFloat(item.deduction),
+                "Phạt sửa công": parseFloat(item.absentPenalty),
+                "Tổng thực nhận": parseFloat(item.totalReceived),
+                "Ghi chú": item.notes
+            }));
+            const wsSummary = XLSX.utils.json_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, wsSummary, "Tổng hợp");
+
+            // Sheets 2..N: Chi tiết từng nhân viên 
+            globalPayrollData.report.forEach(emp => {
+                const employeeSheetName = emp.name.length > 31 ? emp.name.substring(0, 28) + '...' : emp.name;
+                const wsEmployee = XLSX.utils.json_to_sheet([]);
+                
+                const attendanceData = emp.detailedRecords.map(rec => ({
+                    "Ngày": rec.date,
+                    "Giờ vào": rec.checkIn ? new Date(rec.checkIn).toLocaleTimeString('vi-VN') : 'N/A',
+                    "Giờ ra": rec.checkOut ? new Date(rec.checkOut).toLocaleTimeString('vi-VN') : 'N/A',
+                    "Trạng thái": rec.isEdited ? 'Đã sửa công' : (rec.checkOut ? 'Hoàn thành' : 'Đang làm')
+                }));
+
+                XLSX.utils.sheet_add_aoa(wsEmployee, [
+                    [`PHIẾU LƯƠNG NHÂN VIÊN ${emp.name.toUpperCase()} - CHỨC VỤ: ${emp.position}`],
+                    [`Từ ngày ${globalPayrollData.startDate} đến ngày ${globalPayrollData.endDate}`],
+                    [''],
+                    ['Tóm tắt chi tiết'],
+                    ['Ngày công:', emp.totalDays],
+                    ['Giờ làm:', emp.totalHours],
+                    ['Lương cơ bản:', formatCurrency(parseFloat(emp.baseSalary))],
+                    ['Lương ngày lễ:', formatCurrency(parseFloat(emp.holidaySalary))],
+                    ['Thưởng:', formatCurrency(parseFloat(emp.bonus))],
+                    ['Phạt:', formatCurrency(parseFloat(emp.deduction))],
+                    ['Phạt sửa công:', formatCurrency(parseFloat(emp.absentPenalty))],
+                    ['TỔNG THỰC NHẬN:', formatCurrency(parseFloat(emp.totalReceived))],
+                    [''],
+                    ['LỊCH SỬ CHẤM CÔNG'],
+                ], { origin: "A1" });
+                
+                XLSX.utils.sheet_add_json(wsEmployee, attendanceData, { origin: "A15" });
+
+                XLSX.utils.book_append_sheet(wb, wsEmployee, employeeSheetName);
+            });
+            
+            XLSX.writeFile(wb, `BaoCaoLuong_${globalPayrollData.startDate}_${globalPayrollData.endDate}.xlsx`);
+        }
+        
+        function printEmployeeReport(data, payrollData) {
+            printName.textContent = data.name;
+            printPosition.textContent = data.position;
+            printWorkDays.textContent = `${data.totalDays} ngày`;
+            printWorkHours.textContent = `${data.totalHours} giờ`;
+            printBaseSalary.textContent = formatCurrency(parseFloat(data.baseSalary));
+            printHolidaySalary.textContent = formatCurrency(parseFloat(data.holidaySalary));
+            printHolidayNote.textContent = data.notes.length > 0 ? data.notes : "Không có";
+            printBonus.textContent = formatCurrency(parseFloat(data.bonus));
+            printDeduction.textContent = formatCurrency(parseFloat(data.deduction));
+            printAbsentPenaltyCount.textContent = `${data.editedRecords} lần`;
+            printAbsentPenaltyAmount.textContent = formatCurrency(parseFloat(data.absentPenalty));
+            printTotalReceived.textContent = formatCurrency(parseFloat(data.totalReceived));
+
+            printMonthYear.textContent = `Từ ngày ${payrollData.startDate} đến ngày ${payrollData.endDate}`;
+
+            printReport.style.display = 'block';
+            window.print();
+            printReport.style.display = 'none';
+        }
+
+        function loadAttendanceForEdit(searchTerm = '') {
+            const attendance = getAttendance();
+            editAttendanceTableBody.innerHTML = '';
+            const filteredAttendance = attendance.filter(record => record.name && record.name.toLowerCase().includes(searchTerm.toLowerCase()));
+            
+            filteredAttendance.sort((a, b) => new Date(b.date) - new Date(a.date)).forEach(record => {
+                const status = record.isEdited ? 'Đã sửa công' : (record.checkOut ? 'Hoàn thành' : 'Đang làm');
+                const badgeClass = record.isEdited ? 'bg-danger' : (record.checkOut ? 'bg-success' : 'bg-warning');
+                const row = editAttendanceTableBody.insertRow();
+                row.innerHTML = `
+                    <td>${record.name}</td>
+                    <td>${record.date}</td>
+                    <td>${record.checkIn ? formatToTimeString(record.checkIn) : 'N/A'}</td>
+                    <td>${record.checkOut ? formatToTimeString(record.checkOut) : 'N/A'}</td>
+                    <td><span class="badge ${badgeClass}">${status}</span></td>
+                    <td><button class="btn btn-sm btn-primary edit-attendance-btn" data-id="${record.id}"><i class="fas fa-edit"></i> Sửa</button></td>
+                `;
+            });
+            document.querySelectorAll('.edit-attendance-btn').forEach(btn => btn.addEventListener('click', openEditAttendanceModal));
+        }
+
+        function openEditAttendanceModal(e) {
+            const id = parseInt(e.currentTarget.dataset.id);
+            const attendance = getAttendance();
+            const record = attendance.find(rec => rec.id === id);
+
+            if (record) {
+                editAttendanceIdInput.value = record.id;
+                editAttendanceDateInput.value = record.date;
+                editCheckInTimeInput.value = record.checkIn ? formatToTimeString(record.checkIn) : '';
+                editCheckOutTimeInput.value = record.checkOut ? formatToTimeString(record.checkOut) : '';
+                editAttendanceModal.show();
+            }
+        }
+
+        async function saveAttendanceEdit() {
+            const id = parseInt(editAttendanceIdInput.value);
+            const newCheckIn = editCheckInTimeInput.value;
+            const newCheckOut = editCheckOutTimeInput.value;
+            const date = editAttendanceDateInput.value;
+
+            if (!newCheckIn || !newCheckOut) {
+                showNotification('Lỗi', 'Vui lòng nhập đủ giờ vào và giờ ra');
+                return;
+            }
+
+            const attendance = getAttendance();
+            const record = attendance.find(rec => rec.id === id);
+            
+            const [inHours, inMinutes] = newCheckIn.split(':').map(Number);
+            const [outHours, outMinutes] = newCheckOut.split(':').map(Number);
+
+            const newCheckInTimestamp = new Date(date);
+            newCheckInTimestamp.setHours(inHours, inMinutes, 0, 0);
+
+            const newCheckOutTimestamp = new Date(date);
+            newCheckOutTimestamp.setHours(outHours, outMinutes, 0, 0);
+
+            if (newCheckOutTimestamp <= newCheckInTimestamp) {
+                showNotification('Lỗi', 'Giờ ra phải sau giờ vào');
+                return;
+            }
+            
+            record.checkIn = newCheckInTimestamp.getTime();
+            record.checkOut = newCheckOutTimestamp.getTime();
+            record.isEdited = true;
+
+            await saveAttendanceRecord(record);
+            editAttendanceModal.hide();
+            showNotification('Thành công', 'Đã cập nhật giờ chấm công và ghi nhận sửa công');
+            loadAttendanceForEdit(searchEmployeeInput.value); 
+        }
+
+        // --- Event Listeners (Giữ nguyên) ---
+        
+        passwordToggle.addEventListener('click', () => {
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            passwordToggle.classList.toggle('fa-eye-slash');
+        });
+        
+        loginBtn.addEventListener('click', async () => {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            if (!username || !password) {
+                showNotification('Lỗi', 'Vui lòng nhập tài khoản và mật khẩu');
+                return;
+            }
+            
+            await loadInitialDataFromFirebase();
+            
+            const accounts = getAccounts();
+            const account = accounts.find(acc => acc.username === username);
+
+            if (!account || account.password !== password) {
+                showNotification('Lỗi', 'Tên tài khoản hoặc mật khẩu không đúng');
+                return;
+            }
+
+            if (!account.isUsed) {
+                showNotification('Lỗi', 'Tài khoản chưa được kích hoạt. Vui lòng liên hệ Admin.');
+                return;
+            }
+            
+            const now = new Date().getTime();
+            const sessionExpiry = now + SESSION_DURATION_MS;
+            localStorage.setItem('userSession', JSON.stringify({ 
+                username: account.username, 
+                name: account.name, 
+                position: account.position,
+                salary: account.salary,
+                expiry: sessionExpiry 
+            }));
+            
+            currentUser = account;
+            showEmployeeDashboard(account.name, account.position);
+            showNotification('Thành công', `Đăng nhập thành công, ${account.name}!`);
+        });
+
+        logoutBtn.addEventListener('click', () => {
+            clearSession();
+            showLoginScreen();
+            showNotification('Thông báo', 'Bạn đã đăng xuất');
+        });
+
+        adminToggle.addEventListener('click', () => {
+            if (isAdmin) {
+                isAdmin = false;
+                showLoginScreen();
+                adminToggle.textContent = 'Chế độ Admin';
+            } else {
+                adminLoginModal.show();
+            }
+        });
+
+        adminLoginBtn.addEventListener('click', () => {
+            if (adminPasswordInput.value === ADMIN_PASSWORD) {
+                isAdmin = true;
+                showAdminDashboard();
+                adminLoginModal.hide();
+                showNotification('Thành công', 'Đăng nhập Admin thành công');
+                loadAdminData();
+            } else {
+                showNotification('Lỗi', 'Mật khẩu Admin không đúng');
+            }
+        });
+
+        addEmployeeBtn.addEventListener('click', addEmployee);
+        saveEditBtn.addEventListener('click', saveEdit);
+        checkInBtn.addEventListener('click', recordCheckIn);
+        checkOutBtn.addEventListener('click', recordCheckOut);
+        showSalaryBtn.addEventListener('click', showMySalary);
+        updatePayrollBtn.addEventListener('click', calculatePayroll);
+        exportExcelBtn.addEventListener('click', exportDetailedToExcel);
+        searchEmployeeInput.addEventListener('input', (e) => loadAttendanceForEdit(e.target.value));
+        saveAttendanceEditBtn.addEventListener('click', saveAttendanceEdit);
+        
+        // Dynamic event listener for print buttons
+        document.getElementById('payrollReportTable').addEventListener('click', (e) => {
+            if (e.target.classList.contains('print-btn')) {
+                if (globalPayrollData) {
+                    const employeeName = e.target.dataset.name;
+                    const employeeData = globalPayrollData.report.find(item => item.name === employeeName);
+                    if (employeeData) {
+                        printEmployeeReport(employeeData, globalPayrollData);
+                    } else {
+                        showNotification('Lỗi', 'Không tìm thấy dữ liệu nhân viên để in.');
+                    }
+                } else {
+                    showNotification('Lỗi', 'Chưa có bảng lương được tính.');
+                }
+            }
+        });
+
+        // --- Initialization ---
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            updateClock();
+            setInterval(updateClock, 1000);
+            
+            loginSection.classList.add('d-none');
+            loadingIndicator.classList.remove('d-none');
+
+            const dataLoaded = await loadInitialDataFromFirebase();
+            
+            if(dataLoaded) {
+                checkSession();
+                
+                const now = new Date();
+                const today = now.toISOString().split('T')[0];
+                const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+                reportStartDateInput.value = firstDayOfMonth;
+                reportEndDateInput.value = today;
+            } else {
+                showLoginScreen(); 
+            }
+        });
+    </script>
+</body>
+</html>
