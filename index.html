@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hệ Thống Chấm Công Thai Thae</title>
+    <title>Hệ Thống Chấm Công Thai Thae by minhtan</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
-        /* --- Nâng cấp Giao diện V2.0 --- */
+        
         :root {
-            --primary-color: #2c3e50; /* Xanh Navy Sâu */
-            --secondary-color: #1abc9c; /* Xanh Ngọc - Điểm nhấn chính */
-            --accent-color: #f7dc6f; /* Vàng Cát - Điểm nhấn phụ */
+            --primary-color: #2c3e50; 
+            --secondary-color: #1abc9c; 
+            --accent-color: #f7dc6f;
             --success-color: #2ecc71;
             --danger-color: #e74c3c;
             --warning-color: #f39c12;
@@ -36,8 +36,8 @@
             color: white !important;
         }
         .card {
-            border-radius: 15px; /* Bo góc lớn hơn */
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Soft shadow */
+            border-radius: 15px; 
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); 
             margin-bottom: 30px;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
             border: none;
@@ -68,14 +68,14 @@
             border-color: var(--warning-color);
         }
         .admin-section {
-            background-color: #fcfdfe; /* Nền trắng hơi ngả xanh */
+            background-color: #fcfdfe; 
             border: 1px solid #e0e0e0;
             padding: 25px;
             border-radius: 10px;
             margin-top: 20px;
         }
         .clock-display {
-            font-size: 4.5rem; /* Lớn hơn */
+            font-size: 4.5rem; 
             font-weight: 200;
             text-align: center;
             color: var(--dark-color);
@@ -83,7 +83,7 @@
             letter-spacing: 2px;
         }
         .today-summary {
-            background: linear-gradient(135deg, var(--primary-color) 0%, #34495e 100%); /* Màu nền sẫm */
+            background: linear-gradient(135deg, var(--primary-color) 0%, #34495e 100%); 
             color: white;
             border-radius: 10px;
             padding: 25px;
@@ -143,8 +143,7 @@
             }
         }
         
-        /* Cần giữ nguyên các style cho print-container, toast, và password-field */
-        /* ... (CSS còn lại) ... */
+        
     </style>
 </head>
 <body>
@@ -499,8 +498,7 @@
 
         // Khởi tạo Firebase
         const app = firebase.initializeApp(firebaseConfig);
-        const db = app.firestore(); // Khởi tạo Firestore
-
+        const db = app.firestore();
         // Biến toàn cục để lưu trữ dữ liệu từ Firebase
         let globalAccounts = [];
         let globalAttendance = [];
@@ -1311,7 +1309,7 @@
             loadAttendanceForEdit(searchEmployeeInput.value); 
         }
 
-        // --- Event Listeners (Giữ nguyên) ---
+       
         
         passwordToggle.addEventListener('click', () => {
             const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -1339,7 +1337,7 @@
             }
 
             if (!account.isUsed) {
-                showNotification('Lỗi', 'Tài khoản chưa được kích hoạt. Vui lòng liên hệ Admin.');
+                showNotification('Lỗi', 'Tài khoản chưa được kích hoạt. Vui lòng liên hệ minhtan.');
                 return;
             }
             
